@@ -98,12 +98,23 @@ setup_nginx() {
     systemctl reload nginx
 }
 
+setup_uploads() {
+    # Ad images are stored here, OUTSIDE the repo, so they survive a re-clone.
+    # nginx serves them via the /uploads/ alias; php-fpm (www-data) writes them.
+    local UPLOAD_DIR="/var/lib/psv-tracker/uploads"
+    log "Ensuring upload directory $UPLOAD_DIR..."
+    mkdir -p "$UPLOAD_DIR"
+    chown -R www-data:www-data "$UPLOAD_DIR"
+    chmod 755 "$UPLOAD_DIR"
+}
+
 main() {
     check_root
     install_dependencies
     clone_or_update_repo
     setup_database
     run_migrations
+    setup_uploads
     setup_nginx
     log "Done. Capture API is live on port 80."
     echo

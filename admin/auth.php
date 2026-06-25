@@ -51,3 +51,35 @@ function require_admin_json(): array
     }
     return $admin;
 }
+
+/**
+ * CSRF protection for state-changing admin POSTs. Token lives in the session;
+ * csrf_field() drops it into a form, csrf_verify() checks it on submit.
+ */
+function csrf_token(): string
+{
+    admin_session_start();
+    if (empty($_SESSION['csrf'])) {
+        $_SESSION['csrf'] = bin2hex(random_bytes(32));
+    }
+    return (string) $_SESSION['csrf'];
+}
+
+function csrf_field(): string
+{
+    return '<input type="hidden" name="csrf" value="' . htmlspecialchars(csrf_token(), ENT_QUOTES) . '">';
+}
+
+/** Halts with 400 if the submitted token doesn't match the session token. */
+function csrf_verify(): void
+{
+    admin_session_start();
+    $sent = $_POST['csrf'] ?? '';
+    $have = (string) ($_SESSION['csrf'] ?? '');
+    if ($have === '' || !is_string($sent) || !hash_equals($have, $sent)) {
+        http_response_code(400);
+        header('Content-Type: text/plain');
+        echo 'Bad or missing CSRF token. Reload the page and try again.';
+        exit;
+    }
+}
