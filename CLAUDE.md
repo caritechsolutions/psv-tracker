@@ -44,14 +44,44 @@ plus advertising.
 - Don't touch the capture `api/` or any already-applied migration unless asked.
 
 ## Roadmap
-1. Capture API — **done**.
-2. Admin portal — login + live Barbados map of signed-on vehicles. **(current)**
-3. Ads configuration in the admin portal.
-4. Owner portal — owners see only their own vehicles and their telemetry
-   (speed, position).
-5. In-cabin audio from devices — must be consent-backed (signage) and ideally
-   event-triggered rather than always-on, with Barbados Data Protection Act
-   obligations handled deliberately.
+
+Done:
+1. Capture API — driver sign-on / ping / sign-off, bearer-token auth.
+2. Admin portal — login + live Barbados map of signed-on vehicles.
+
+Current:
+3. Admin shell — shared layout: left nav rail (Map, Ads, Fleet, Owners,
+   Reports, Settings) + one header/layout partial. Retrofit the map into it;
+   map controls become a collapsible overlay panel (live vehicle list,
+   route/seat filters, search) over a full-bleed map.
+
+Next:
+4. Ads configuration — first real section built inside the shell.
+5. Fleet management — vehicles (with a capacity field), drivers, routes. The
+   driver/conductor seat-status toggle is the source of truth for
+   seats-available.
+6. Owner portal — owners see only their own vehicles and telemetry (speed,
+   position).
+
+Rider side (separate workstream, after the admin portal):
+7. Rider app/web — live view + ETA for riders.
+8. Ride rewards — distance-travelled points for retention. Compute distance
+   from the rider's own trip pings, confirmed as a real PSV ride via
+   co-movement matching (rider speed/heading/stop-go tracks a tracked vehicle).
+   Server-side anti-fraud: mock-location/GPS-spoof detection, route/speed
+   plausibility, rate caps. Battery-friendly: track only during an active trip,
+   foreground-service notification, sensible cadence.
+9. GPS occupancy (later) — infer seats-available from co-moving rider devices;
+   only viable once app penetration is high (undercounts otherwise). Automatic
+   passenger counters (door sensors) are the accurate-count upgrade when the
+   per-vehicle hardware cost is justified.
+
+Later:
+10. In-cabin audio — consent-backed (signage), ideally event-triggered; handle
+    Barbados Data Protection Act obligations deliberately.
+
+Privacy note: continuous precise rider tracking is sensitive personal data —
+build consent and a clear stated purpose (earning ride points) in from the start.
 
 ## Useful facts
 - Barbados map center ≈ `13.19, -59.54`.
