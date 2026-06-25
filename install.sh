@@ -108,6 +108,37 @@ setup_uploads() {
     chmod 755 "$UPLOAD_DIR"
 }
 
+setup_php() {
+    # Raise php-fpm's upload ceiling above the app's 2 MB image cap
+    # (ADS_MAX_BYTES in ads_lib.php) so PHP doesn't reject a legit ~2 MB upload
+    # before the app's own check runs. The app check stays the real limit.
+    # Done via a conf.d drop-in (never the distro php.ini); idempotent.
+    log "Configuring php-fpm upload limits..."
+    local SOCK PHPVER CONFD INI SERVICE
+    # Discover the version from the fpm socket, same way setup_nginx does.
+    SOCK="$(ls /run/php/php*-fpm.sock 2>/dev/null | head -1)"
+    if [ -z "$SOCK" ]; then
+        echo "Could not find a php-fpm socket under /run/php/." >&2
+        exit 1
+    fi
+    PHPVER="$(basename "$SOCK" | sed -E 's/^php([0-9.]+)-fpm\.sock$/\1/')"
+    CONFD="/etc/php/$PHPVER/fpm/conf.d"
+    SERVICE="php${PHPVER}-fpm"
+    INI="$CONFD/99-psv-tracker.ini"
+
+    mkdir -p "$CONFD"
+    cat > "$INI" <<'EOF'
+; Managed by psv-tracker install.sh — gives the app-level 2 MB image check
+; (ADS_MAX_BYTES in ads_lib.php) headroom so PHP doesn't reject a valid upload
+; first. post_max_size must stay >= upload_max_filesize. Re-running install.sh
+; rewrites this file.
+upload_max_filesize = 4M
+post_max_size = 8M
+EOF
+    log "Wrote $INI (php $PHPVER); restarting $SERVICE..."
+    systemctl restart "$SERVICE"
+}
+
 main() {
     check_root
     install_dependencies
@@ -115,6 +146,7 @@ main() {
     setup_database
     run_migrations
     setup_uploads
+    setup_php
     setup_nginx
     log "Done. Capture API is live on port 80."
     echo
