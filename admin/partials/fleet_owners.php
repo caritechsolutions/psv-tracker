@@ -3,14 +3,16 @@
     The full owner-facing portal is roadmap #6. Expects $pdo and $h. */
 declare(strict_types=1);
 
+// Explicit columns — never load password_hash into the view.
 $editing = null;
 if (isset($_GET['edit'])) {
-    $s = $pdo->prepare('SELECT * FROM owners WHERE id = ?');
+    $s = $pdo->prepare('SELECT id, name, username, contact_name, email, phone, status FROM owners WHERE id = ?');
     $s->execute([(int) $_GET['edit']]);
     $editing = $s->fetch() ?: null;
 }
 $owners = $pdo->query(
-    'SELECT o.*, (SELECT COUNT(*) FROM vehicles v WHERE v.owner_id = o.id) AS vehicle_count
+    'SELECT o.id, o.name, o.username, o.contact_name, o.email, o.phone, o.status,
+            (SELECT COUNT(*) FROM vehicles v WHERE v.owner_id = o.id) AS vehicle_count
        FROM owners o ORDER BY o.name'
 )->fetchAll();
 ?>
@@ -24,6 +26,15 @@ $owners = $pdo->query(
   <label>Name
     <input name="name" maxlength="160" required value="<?= $h($editing['name'] ?? '') ?>">
   </label>
+  <div class="form-row">
+    <label>Portal username
+      <input name="username" maxlength="60" autocomplete="off" value="<?= $h($editing['username'] ?? '') ?>">
+    </label>
+    <label>Portal password<?= $editing ? ' (blank = keep)' : '' ?>
+      <input name="password" type="password" autocomplete="new-password">
+    </label>
+  </div>
+  <small class="hint">Set a username and password to give this owner access to the owner portal.</small>
   <div class="form-row">
     <label>Contact name
       <input name="contact_name" maxlength="160" value="<?= $h($editing['contact_name'] ?? '') ?>">
@@ -48,13 +59,13 @@ $owners = $pdo->query(
 </form>
 
 <table class="ads-table">
-  <thead><tr><th>Name</th><th>Contact</th><th>Email</th><th>Phone</th><th>Vehicles</th><th>Status</th><th></th></tr></thead>
+  <thead><tr><th>Name</th><th>Portal login</th><th>Email</th><th>Phone</th><th>Vehicles</th><th>Status</th><th></th></tr></thead>
   <tbody>
     <?php if (!$owners): ?><tr><td colspan="7" class="empty">No owners yet.</td></tr><?php endif; ?>
     <?php foreach ($owners as $o): ?>
       <tr>
         <td><?= $h($o['name']) ?></td>
-        <td><?= $h($o['contact_name']) ?: '&mdash;' ?></td>
+        <td><?= $o['username'] ? $h($o['username']) : '<span class="hint">&mdash;</span>' ?></td>
         <td><?= $h($o['email']) ?: '&mdash;' ?></td>
         <td><?= $h($o['phone']) ?: '&mdash;' ?></td>
         <td><?= (int) $o['vehicle_count'] ?></td>

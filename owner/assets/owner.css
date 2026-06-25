@@ -1,0 +1,52 @@
+/* Owner portal — minimal, independent of the admin shell. */
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; display: flex; flex-direction: column; }
+
+.owner-bar {
+  flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between;
+  background: #0d4ea0; color: #fff; padding: 0 1rem; height: 52px;
+}
+.owner-bar .brand { font-weight: 600; font-size: 1.05rem; }
+.owner-bar .brand .sub { font-weight: 400; opacity: .8; font-size: .85rem; margin-left: .4rem; }
+.owner-bar .who { font-size: .85rem; display: flex; align-items: center; gap: .7rem; }
+.logout-form { display: inline; margin: 0; }
+.logout-btn {
+  background: transparent; border: 1px solid rgba(255,255,255,.6); color: #fff;
+  border-radius: 4px; padding: .25rem .6rem; cursor: pointer; font-size: .8rem;
+}
+.logout-btn:hover { background: rgba(255,255,255,.15); }
+
+.owner-main { flex: 1 1 auto; min-height: 0; position: relative; }
+.map-wrap { position: absolute; inset: 0; }
+#map { position: absolute; inset: 0; }
+
+.owner-panel {
+  position: absolute; top: 10px; left: 10px; z-index: 1000;
+  width: 260px; max-height: calc(100% - 20px);
+  display: flex; flex-direction: column;
+  background: #fff; border-radius: 8px; box-shadow: 0 1px 6px rgba(0,0,0,.3);
+  font-size: .9rem; overflow: hidden;
+}
+.owner-panel-head {
+  flex: 0 0 auto; display: flex; align-items: center; gap: .5rem;
+  padding: .55rem .7rem; background: #f7f8fa; border-bottom: 1px solid #e3e6ea;
+}
+.owner-panel-head .title { font-weight: 600; }
+.owner-panel-head .count { color: #5b6573; font-size: .8rem; margin-left: auto; }
+
+.vehicle-list { list-style: none; margin: 0; padding: .25rem 0; overflow-y: auto; }
+.vehicle-list li { padding: .45rem .7rem; cursor: pointer; border-bottom: 1px solid #f1f2f4; }
+.vehicle-list li:hover { background: #eef4fc; }
+.vehicle-list li.empty { color: #8a94a2; cursor: default; text-align: center; padding: .9rem; }
+.vehicle-list li.empty:hover { background: transparent; }
+.vehicle-list .reg { font-weight: 600; display: block; }
+.vehicle-list .meta { color: #5b6573; font-size: .8rem; }
+.vehicle-list .seat-available { color: #1b5e20; }
+.vehicle-list .seat-full { color: #b71c1c; }
+.vehicle-list .seat-unknown { color: #777; }
+
+.popup-reg { font-weight: 600; }
+.seat-available { color: #1b5e20; }
+.seat-full { color: #b71c1c; }
+.seat-unknown { color: #555; }
