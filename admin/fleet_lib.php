@@ -199,11 +199,13 @@ function fleet_handle_owner(PDO $pdo): void
         fleet_redirect('owners', 'ok', 'Owner deleted.');
     }
 
-    $name    = trim($_POST['name'] ?? '');
-    $contact = fleet_str_or_null($_POST['contact_name'] ?? '');
-    $email   = fleet_str_or_null($_POST['email'] ?? '');
-    $phone   = fleet_str_or_null($_POST['phone'] ?? '');
-    $status  = ($_POST['status'] ?? 'active') === 'inactive' ? 'inactive' : 'active';
+    $name     = trim($_POST['name'] ?? '');
+    $username = fleet_str_or_null($_POST['username'] ?? '');
+    $password = (string) ($_POST['password'] ?? '');
+    $contact  = fleet_str_or_null($_POST['contact_name'] ?? '');
+    $email    = fleet_str_or_null($_POST['email'] ?? '');
+    $phone    = fleet_str_or_null($_POST['phone'] ?? '');
+    $status   = ($_POST['status'] ?? 'active') === 'inactive' ? 'inactive' : 'active';
 
     if ($name === '') {
         fleet_redirect('owners', 'err', 'Owner name is required.');
@@ -212,15 +214,30 @@ function fleet_handle_owner(PDO $pdo): void
         fleet_redirect('owners', 'err', 'Email address is not valid.');
     }
 
-    if ($action === 'create') {
-        $pdo->prepare('INSERT INTO owners (name, contact_name, email, phone, status) VALUES (?, ?, ?, ?, ?)')
-            ->execute([$name, $contact, $email, $phone, $status]);
-        fleet_redirect('owners', 'ok', 'Owner created.');
-    }
-    if ($action === 'update') {
-        $pdo->prepare('UPDATE owners SET name=?, contact_name=?, email=?, phone=?, status=? WHERE id=?')
-            ->execute([$name, $contact, $email, $phone, $status, (int) ($_POST['id'] ?? 0)]);
-        fleet_redirect('owners', 'ok', 'Owner saved.');
+    try {
+        if ($action === 'create') {
+            // A password is only meaningful with a username for portal login.
+            $hash = ($username !== null && $password !== '') ? password_hash($password, PASSWORD_DEFAULT) : null;
+            $pdo->prepare('INSERT INTO owners (name, username, password_hash, contact_name, email, phone, status) VALUES (?, ?, ?, ?, ?, ?, ?)')
+                ->execute([$name, $username, $hash, $contact, $email, $phone, $status]);
+            fleet_redirect('owners', 'ok', 'Owner created.');
+        }
+        if ($action === 'update') {
+            $id = (int) ($_POST['id'] ?? 0);
+            if ($password !== '') {
+                $pdo->prepare('UPDATE owners SET name=?, username=?, password_hash=?, contact_name=?, email=?, phone=?, status=? WHERE id=?')
+                    ->execute([$name, $username, password_hash($password, PASSWORD_DEFAULT), $contact, $email, $phone, $status, $id]);
+            } else {
+                $pdo->prepare('UPDATE owners SET name=?, username=?, contact_name=?, email=?, phone=?, status=? WHERE id=?')
+                    ->execute([$name, $username, $contact, $email, $phone, $status, $id]);
+            }
+            fleet_redirect('owners', 'ok', 'Owner saved.');
+        }
+    } catch (PDOException $e) {
+        if ((int) $e->getCode() === 23000) {
+            fleet_redirect('owners', 'err', 'That portal username is already taken.');
+        }
+        throw $e;
     }
     fleet_redirect('owners', 'err', 'Unknown action.');
 }
