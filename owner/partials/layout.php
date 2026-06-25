@@ -12,11 +12,13 @@ const OWNER_LEAFLET_CSS =
 
 function owner_layout_start(array $opts): void
 {
-    $owner = $opts['owner'] ?? ['name' => '', 'username' => ''];
-    $title = (string) ($opts['title'] ?? 'Owner portal');
-    $head  = (string) ($opts['head'] ?? '');
-    $who   = ($owner['name'] ?? '') !== '' ? $owner['name'] : ($owner['username'] ?? '');
-    $h     = static fn (string $s): string => htmlspecialchars($s, ENT_QUOTES);
+    $owner  = $opts['owner'] ?? ['name' => '', 'username' => ''];
+    $title  = (string) ($opts['title'] ?? 'Owner portal');
+    $head   = (string) ($opts['head'] ?? '');
+    $active = (string) ($opts['active'] ?? '');
+    $who    = ($owner['name'] ?? '') !== '' ? $owner['name'] : ($owner['username'] ?? '');
+    $h      = static fn (string $s): string => htmlspecialchars($s, ENT_QUOTES);
+    $nav    = ['map' => ['Map', 'index.php'], 'drivers' => ['Drivers', 'drivers.php']];
     ?>
 <!doctype html>
 <html lang="en">
@@ -30,6 +32,11 @@ function owner_layout_start(array $opts): void
 <body>
   <header class="owner-bar">
     <div class="brand">PSV Tracker <span class="sub">Owner portal</span></div>
+    <nav class="owner-nav">
+      <?php foreach ($nav as $key => $item): ?>
+        <a class="<?= $key === $active ? 'active' : '' ?>" href="<?= $h($item[1]) ?>"><?= $h($item[0]) ?></a>
+      <?php endforeach; ?>
+    </nav>
     <div class="who">
       Signed in as <strong><?= $h((string) $who) ?></strong>
       <form method="post" action="logout.php" class="logout-form">

@@ -124,6 +124,7 @@ function fleet_handle_driver(PDO $pdo): void
     $username = trim($_POST['username'] ?? '');
     $password = (string) ($_POST['password'] ?? '');
     $status   = ($_POST['status'] ?? 'active') === 'suspended' ? 'suspended' : 'active';
+    $owner    = fleet_int_or_null($_POST['owner_id'] ?? '');
 
     if ($name === '' || $username === '') {
         fleet_redirect('drivers', 'err', 'Name and username are required.');
@@ -134,18 +135,18 @@ function fleet_handle_driver(PDO $pdo): void
             if ($password === '') {
                 fleet_redirect('drivers', 'err', 'A password is required for a new driver.');
             }
-            $pdo->prepare('INSERT INTO drivers (name, username, password_hash, status) VALUES (?, ?, ?, ?)')
-                ->execute([$name, $username, password_hash($password, PASSWORD_DEFAULT), $status]);
+            $pdo->prepare('INSERT INTO drivers (owner_id, name, username, password_hash, status) VALUES (?, ?, ?, ?, ?)')
+                ->execute([$owner, $name, $username, password_hash($password, PASSWORD_DEFAULT), $status]);
             fleet_redirect('drivers', 'ok', 'Driver created.');
         }
         if ($action === 'update') {
             $id = (int) ($_POST['id'] ?? 0);
             if ($password !== '') {
-                $pdo->prepare('UPDATE drivers SET name=?, username=?, password_hash=?, status=? WHERE id=?')
-                    ->execute([$name, $username, password_hash($password, PASSWORD_DEFAULT), $status, $id]);
+                $pdo->prepare('UPDATE drivers SET owner_id=?, name=?, username=?, password_hash=?, status=? WHERE id=?')
+                    ->execute([$owner, $name, $username, password_hash($password, PASSWORD_DEFAULT), $status, $id]);
             } else {
-                $pdo->prepare('UPDATE drivers SET name=?, username=?, status=? WHERE id=?')
-                    ->execute([$name, $username, $status, $id]);
+                $pdo->prepare('UPDATE drivers SET owner_id=?, name=?, username=?, status=? WHERE id=?')
+                    ->execute([$owner, $name, $username, $status, $id]);
             }
             fleet_redirect('drivers', 'ok', 'Driver saved.', $id);
         }
