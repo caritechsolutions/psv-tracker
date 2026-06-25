@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 $editing = null;
 if (isset($_GET['edit'])) {
-    $s = $pdo->prepare('SELECT id, name, username, status FROM drivers WHERE id = ?');
+    $s = $pdo->prepare('SELECT id, owner_id, name, username, status FROM drivers WHERE id = ?');
     $s->execute([(int) $_GET['edit']]);
     $editing = $s->fetch() ?: null;
 }
+$owners  = $pdo->query('SELECT id, name FROM owners ORDER BY name')->fetchAll();
 $drivers = $pdo->query(
-    'SELECT d.id, d.name, d.username, d.status,
+    'SELECT d.id, d.name, d.username, d.status, o.name AS owner_name,
             (SELECT COUNT(*) FROM driver_tokens t WHERE t.driver_id = d.id) AS token_count
-       FROM drivers d ORDER BY d.name'
+       FROM drivers d LEFT JOIN owners o ON o.id = d.owner_id
+      ORDER BY d.name'
 )->fetchAll();
 
 $tokens = [];
@@ -36,6 +38,14 @@ if ($editing) {
   </label>
   <label>Password<?= $editing ? ' (leave blank to keep current)' : '' ?>
     <input name="password" type="password" autocomplete="new-password"<?= $editing ? '' : ' required' ?>>
+  </label>
+  <label>Owner
+    <select name="owner_id">
+      <option value="">&mdash; none &mdash;</option>
+      <?php foreach ($owners as $o): ?>
+        <option value="<?= (int) $o['id'] ?>"<?= ($editing && (int) $editing['owner_id'] === (int) $o['id']) ? ' selected' : '' ?>><?= $h($o['name']) ?></option>
+      <?php endforeach; ?>
+    </select>
   </label>
   <label>Status
     <select name="status">
@@ -89,13 +99,14 @@ if ($editing) {
 <?php endif; ?>
 
 <table class="ads-table">
-  <thead><tr><th>Name</th><th>Username</th><th>Status</th><th>Tokens</th><th></th></tr></thead>
+  <thead><tr><th>Name</th><th>Username</th><th>Owner</th><th>Status</th><th>Tokens</th><th></th></tr></thead>
   <tbody>
-    <?php if (!$drivers): ?><tr><td colspan="5" class="empty">No drivers yet.</td></tr><?php endif; ?>
+    <?php if (!$drivers): ?><tr><td colspan="6" class="empty">No drivers yet.</td></tr><?php endif; ?>
     <?php foreach ($drivers as $d): ?>
       <tr>
         <td><?= $h($d['name']) ?></td>
         <td><?= $h($d['username']) ?></td>
+        <td><?= $d['owner_name'] ? $h($d['owner_name']) : '<span class="hint">&mdash;</span>' ?></td>
         <td><span class="badge <?= $d['status'] === 'active' ? 'badge-on' : 'badge-off' ?>"><?= $h($d['status']) ?></span></td>
         <td><?= (int) $d['token_count'] ?></td>
         <td class="row-actions">

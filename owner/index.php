@@ -6,9 +6,10 @@ require __DIR__ . '/partials/layout.php';
 $owner = require_owner_page();
 
 owner_layout_start([
-    'owner' => $owner,
-    'title' => 'Live map',
-    'head'  => OWNER_LEAFLET_CSS,
+    'owner'  => $owner,
+    'title'  => 'Live map',
+    'active' => 'map',
+    'head'   => OWNER_LEAFLET_CSS,
 ]);
 ?>
 <div class="map-wrap">
