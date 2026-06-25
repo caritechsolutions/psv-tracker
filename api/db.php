@@ -58,8 +58,10 @@ function bearer_token(): ?string
 }
 
 /**
- * Authenticate the driver by api_token. Halts with 401 on failure.
- * Returns the driver row on success.
+ * Authenticate the driver by bearer token. The token is looked up in
+ * driver_tokens (joined to drivers, driver must be active). Halts with 401 on
+ * failure. Returns the driver row (id, name, status) on success — same shape
+ * and same 401 behaviour as before, so sign-on/ping/sign-off are unaffected.
  */
 function authenticate_driver(): array
 {
@@ -67,12 +69,18 @@ function authenticate_driver(): array
     if ($token === null) {
         json_response(401, ['ok' => false, 'error' => 'missing_token']);
     }
-    $stmt = db()->prepare('SELECT id, name, status FROM drivers WHERE api_token = ? LIMIT 1');
+    $stmt = db()->prepare(
+        'SELECT d.id, d.name, d.status
+           FROM driver_tokens t
+           JOIN drivers d ON d.id = t.driver_id
+          WHERE t.token = ? LIMIT 1'
+    );
     $stmt->execute([$token]);
     $driver = $stmt->fetch();
     if (!$driver || $driver['status'] !== 'active') {
         json_response(401, ['ok' => false, 'error' => 'invalid_token']);
     }
+    db()->prepare('UPDATE driver_tokens SET last_used_at = NOW() WHERE token = ?')->execute([$token]);
     return $driver;
 }
 
