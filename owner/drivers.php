@@ -173,6 +173,7 @@ owner_layout_start(['owner' => $owner, 'title' => 'Drivers', 'active' => 'driver
           <td><span class="badge <?= $d['status'] === 'active' ? 'badge-on' : 'badge-off' ?>"><?= $h($d['status']) ?></span></td>
           <td><?= (int) $d['token_count'] ?></td>
           <td class="row-actions">
+            <a class="btn-sm" href="access.php?driver=<?= (int) $d['id'] ?>">Access</a>
             <a class="btn-sm" href="drivers.php?edit=<?= (int) $d['id'] ?>">Edit</a>
             <form method="post" action="drivers.php" class="inline">
               <?= owner_csrf_field() ?>
