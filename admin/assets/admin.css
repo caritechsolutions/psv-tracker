@@ -1,0 +1,112 @@
+/* PSV admin shell: top bar + left nav rail + content frame, plus the map
+   overlay control panel. */
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  display: flex; flex-direction: column;
+  background: #f4f5f7; color: #1f2733;
+}
+
+/* ---- top bar ---- */
+.topbar {
+  flex: 0 0 auto;
+  display: flex; align-items: center; gap: 1rem;
+  background: #1565c0; color: #fff;
+  padding: 0 1rem; height: 52px;
+}
+.topbar .brand { display: flex; align-items: center; gap: .5rem; font-size: 1.05rem; }
+.topbar .brand i { font-size: 1.3rem; }
+.topbar .livecount { font-size: .85rem; opacity: .92; }
+.topbar .user { margin-left: auto; font-size: .85rem; }
+.topbar a { color: #fff; }
+
+/* ---- shell: nav rail + content ---- */
+.shell { flex: 1 1 auto; display: flex; min-height: 0; }
+
+.rail {
+  flex: 0 0 184px;
+  background: #1f2733; color: #c7d0db;
+  padding: .5rem 0; overflow-y: auto;
+}
+.nav-item {
+  display: flex; align-items: center; gap: .7rem;
+  padding: .65rem 1.1rem;
+  color: #c7d0db; text-decoration: none;
+  font-size: .95rem; border-left: 3px solid transparent;
+}
+.nav-item i { font-size: 1.25rem; width: 1.25rem; text-align: center; }
+.nav-item:hover { background: #283342; color: #fff; }
+.nav-item.active {
+  background: #283342; color: #fff;
+  border-left-color: #1565c0;
+}
+
+/* ---- content area ---- */
+.content { flex: 1 1 auto; min-width: 0; min-height: 0; overflow: auto; padding: 1.5rem; }
+.content.full-bleed { padding: 0; overflow: hidden; }
+
+/* placeholder sections */
+.placeholder {
+  height: 100%; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: .25rem; color: #5b6573;
+}
+.placeholder i { font-size: 2.5rem; color: #9aa6b4; }
+.placeholder h2 { margin: .25rem 0 0; }
+.placeholder p { margin: 0; }
+
+/* ---- map page ---- */
+.map-wrap { position: relative; height: 100%; width: 100%; }
+#map { position: absolute; inset: 0; }
+
+/* ---- map overlay control panel (top-left) ---- */
+.panel {
+  position: absolute; top: 10px; left: 10px; z-index: 1000;
+  width: 280px; max-height: calc(100% - 20px);
+  display: flex; flex-direction: column;
+  background: #fff; border-radius: 8px;
+  box-shadow: 0 1px 6px rgba(0,0,0,.3);
+  font-size: .9rem; overflow: hidden;
+}
+.panel-head {
+  flex: 0 0 auto;
+  display: flex; align-items: center; gap: .5rem;
+  padding: .55rem .7rem; background: #f7f8fa; border-bottom: 1px solid #e3e6ea;
+}
+.panel-head .title { font-weight: 600; }
+.panel-head .count { color: #5b6573; font-size: .8rem; }
+.panel-toggle {
+  margin-left: auto; border: 0; background: transparent; cursor: pointer;
+  color: #5b6573; font-size: 1.25rem; line-height: 1; padding: 0 .15rem;
+  display: flex; align-items: center;
+}
+.panel-toggle:hover { color: #1f2733; }
+
+.panel-body { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+.panel.collapsed { width: auto; }
+.panel.collapsed .panel-body { display: none; }
+
+.panel-filters { padding: .6rem .7rem; display: grid; gap: .5rem; border-bottom: 1px solid #eee; }
+.panel-filters input, .panel-filters select {
+  width: 100%; padding: .4rem .5rem; border: 1px solid #ccc; border-radius: 4px; font-size: .9rem;
+}
+.filter-row { display: flex; gap: .5rem; }
+.filter-row select { flex: 1 1 0; min-width: 0; }
+
+.vehicle-list { list-style: none; margin: 0; padding: .25rem 0; overflow-y: auto; }
+.vehicle-list li { padding: .45rem .7rem; cursor: pointer; border-bottom: 1px solid #f1f2f4; }
+.vehicle-list li:hover { background: #eef4fc; }
+.vehicle-list li.empty { color: #8a94a2; cursor: default; text-align: center; padding: .9rem; }
+.vehicle-list li.empty:hover { background: transparent; }
+.vehicle-list .reg { font-weight: 600; display: block; }
+.vehicle-list .meta { color: #5b6573; font-size: .8rem; }
+.vehicle-list .seat-available { color: #1b5e20; }
+.vehicle-list .seat-full { color: #b71c1c; }
+.vehicle-list .seat-unknown { color: #777; }
+
+/* popup seat colours (shared with marker popups) */
+.popup-reg { font-weight: 600; }
+.seat-available { color: #1b5e20; }
+.seat-full { color: #b71c1c; }
+.seat-unknown { color: #555; }
