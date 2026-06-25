@@ -1,0 +1,2 @@
+# Server-generated, holds DB credentials — never commit (see CLAUDE.md / install.sh).
+api/config.php
