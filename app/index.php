@@ -1,11 +1,18 @@
 <?php
 declare(strict_types=1);
+require __DIR__ . '/auth.php';
 require __DIR__ . '/partials/layout.php';
 
-// Public live map — no login required.
+// Public live map — no login required. The header just reflects sign-in state.
+$rider = current_rider();
+$nav = $rider
+    ? '<a href="account.php">Account</a>'
+    : '<a href="login.php">Sign in</a>';
+
 rider_layout_start([
     'title' => 'PSV Tracker — catch your van',
     'head'  => RIDER_LEAFLET_CSS,
+    'nav'   => $nav,
 ]);
 ?>
 <div class="rider-map-wrap">
