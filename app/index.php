@@ -27,12 +27,16 @@ rider_layout_start([
     </div>
     <div id="nearest" class="nearest">Pick a route and tap <strong>Near me</strong> to find your closest van.</div>
   </div>
+
+  <div id="toast" class="toast" hidden></div>
 </div>
 
 <div id="ad-banner" class="ad-banner" hidden></div>
 <?php
+$riderConfig = '<script>window.RIDER_LOGGED_IN=' . ($rider ? 'true' : 'false') . ';'
+    . 'window.RIDER_CSRF=' . ($rider ? json_encode(rider_csrf_token()) : 'null') . ';</script>';
 rider_layout_end([
-    'scripts' =>
+    'scripts' => $riderConfig .
         '<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"' .
         ' integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>' .
         '<script src="assets/rider-map.js"></script>',
