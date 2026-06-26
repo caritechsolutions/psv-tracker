@@ -60,6 +60,29 @@ body {
 .seat-full { color: #b71c1c; }
 .seat-unknown { color: #555; }
 
+/* auth + account content pages */
+.rider-content { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 1.25rem; display: flex; justify-content: center; align-items: flex-start; }
+.auth-card, .account-box {
+  background: #fff; width: 100%; max-width: 380px; border-radius: 10px;
+  box-shadow: 0 1px 6px rgba(0,0,0,.12); padding: 1.4rem 1.3rem;
+}
+.auth-card h1, .account-box h1 { font-size: 1.3rem; margin: 0 0 .25rem; }
+.auth-card .sub { color: #5b6573; font-size: .9rem; margin: 0 0 1rem; }
+.auth-card label { display: grid; gap: .3rem; font-size: .85rem; color: #333; margin-top: .8rem; }
+.auth-card input {
+  padding: .6rem .55rem; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; width: 100%;
+}
+.auth-card .hint { color: #6b7280; font-size: .78rem; }
+.auth-card button, .account-box .btn-secondary {
+  margin-top: 1.1rem; width: 100%; padding: .65rem; border: 0; border-radius: 6px;
+  background: #0d4ea0; color: #fff; font-size: 1rem; cursor: pointer;
+}
+.account-box .btn-secondary { background: #eceff1; color: #1f2733; margin-top: 1.25rem; }
+.auth-card .alt { font-size: .85rem; margin: 1rem 0 0; text-align: center; }
+.auth-card .alt a, .account-box a { color: #0d4ea0; }
+.auth-error { background: #fdecea; color: #b71c1c; padding: .55rem .7rem; border-radius: 6px; font-size: .85rem; }
+.account-box .muted { color: #5b6573; }
+
 /* rider's own location marker label */
 .rider-here {
   background: #0d4ea0; color: #fff; border-radius: 999px; padding: .1rem .5rem;
