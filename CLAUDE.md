@@ -32,8 +32,12 @@ plus advertising.
 - `api/` — capture endpoints `signon.php`, `ping.php`, `signoff.php`, plus shared
   `db.php` (bearer-token auth, JSON helpers).
 - `schema/001_init.sql` — tables `drivers`, `vehicles`, `routes`, `shifts`,
-  `positions`; seeds a test driver (token `test-token-abc123`), vehicle id 1,
-  route id 1.
+  `positions`; seeds a test driver, vehicle id 1, route id 1.
+- **The public test token `test-token-abc123` is REVOKED** (migration
+  `010_revoke_test_token.sql`) because it shipped in the repo. It returns 401
+  everywhere. Do NOT reintroduce it in any new migration. Tests must obtain a
+  private capture token via `api/driver-login.php` (driver `rrrrr` has a password
+  and a vehicle grant) and use that as the `Authorization: Bearer` token.
 - `install.sh`, `update.sh`, `nginx/psv-tracker.conf`.
 
 ## How to work in this repo
