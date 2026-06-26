@@ -40,7 +40,8 @@ $routes = array_map(static function (array $r): array {
 }, $pdo->query('SELECT id, route_number, name FROM routes ORDER BY route_number')->fetchAll());
 
 json_response(200, [
-    'ok'       => true,
-    'vehicles' => $vehicles,
-    'routes'   => $routes,
+    'ok'              => true,
+    'speed_limit_kmh' => (int) setting_get('speed_limit_kmh', '60'),
+    'vehicles'        => $vehicles,
+    'routes'          => $routes,
 ]);
