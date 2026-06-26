@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require __DIR__ . '/../api/db.php';
+require __DIR__ . '/../api/rate_limit.php';
 require __DIR__ . '/auth.php';
 
 owner_session_start();
@@ -14,10 +15,14 @@ if (current_owner() !== null) {
 $error = '';
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     owner_csrf_verify();
+    $ip = client_ip();
     $username = trim($_POST['username'] ?? '');
     $password = (string) ($_POST['password'] ?? '');
 
-    if ($username === '' || $password === '') {
+    if (rate_limit_blocked('owner_login', $ip)) {
+        http_response_code(429);
+        $error = 'Too many failed attempts. Please wait a few minutes and try again.';
+    } elseif ($username === '' || $password === '') {
         $error = 'Enter your username and password.';
     } else {
         $stmt = db()->prepare(
@@ -31,6 +36,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         if ($owner && $owner['status'] === 'active'
             && $owner['password_hash'] !== null
             && password_verify($password, $owner['password_hash'])) {
+            rate_limit_clear('owner_login', $ip);
             session_regenerate_id(true);
             $_SESSION['owner_id']       = (int) $owner['id'];
             $_SESSION['owner_username'] = $owner['username'];
@@ -38,6 +44,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             header('Location: index.php');
             exit;
         }
+        rate_limit_fail('owner_login', $ip);
         $error = 'Invalid username or password.';
     }
 }
