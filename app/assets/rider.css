@@ -60,6 +60,36 @@ body {
 .seat-full { color: #b71c1c; }
 .seat-unknown { color: #555; }
 
+/* check-in (popup) + toast */
+.checkin-area { margin-top: .55rem; }
+.checkin-btn {
+  width: 100%; border: 0; border-radius: 6px; background: #0d4ea0; color: #fff;
+  padding: .5rem; font-size: .95rem; cursor: pointer;
+}
+.checkin-btn:disabled { background: #8aa6cc; cursor: default; }
+.checkin-signin { display: inline-block; color: #0d4ea0; font-weight: 600; text-decoration: none; }
+.toast {
+  position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 1200;
+  padding: .65rem .8rem; border-radius: 8px; font-size: .9rem; text-align: center;
+  box-shadow: 0 2px 10px rgba(0,0,0,.3);
+}
+.toast-ok { background: #1b5e20; color: #fff; }
+.toast-err { background: #b71c1c; color: #fff; }
+
+/* points + ride history */
+.points { display: flex; align-items: baseline; gap: .4rem; margin: 1rem 0; }
+.points-num { font-size: 2.4rem; font-weight: 800; color: #0d4ea0; line-height: 1; }
+.points-label { color: #5b6573; font-size: 1rem; }
+.account-box h2 { font-size: 1.05rem; margin: 1.1rem 0 .4rem; }
+.ride-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .6rem; }
+.ride-list li { border: 1px solid #eef0f2; border-radius: 8px; padding: .6rem .7rem; }
+.ride-main { display: flex; align-items: baseline; gap: .5rem; }
+.ride-main .reg { font-weight: 700; }
+.ride-main .label { color: #5b6573; font-size: .85rem; }
+.ride-main .pt { margin-left: auto; color: #1b5e20; font-weight: 700; }
+.ride-meta { color: #5b6573; font-size: .82rem; margin-top: .15rem; }
+.rate-stub { margin-top: .5rem; font-size: .8rem; color: #8a94a2; background: #f4f5f7; border: 1px solid #e3e6ea; border-radius: 5px; padding: .3rem .6rem; cursor: not-allowed; }
+
 /* auth + account content pages */
 .rider-content { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 1.25rem; display: flex; justify-content: center; align-items: flex-start; }
 .auth-card, .account-box {

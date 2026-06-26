@@ -78,8 +78,64 @@
       'Speed: ' + speed,
       'Last seen ' + esc(lastSeen(serverTime, v.received_at))
     ];
-    return lines.join('<br>');
+    return lines.join('<br>') + checkinBlock(v);
   }
+
+  function checkinBlock(v) {
+    if (window.RIDER_LOGGED_IN) {
+      return '<div class="checkin-area"><button class="checkin-btn" data-shift="' + v.shift_id + '">Check in</button></div>';
+    }
+    return '<div class="checkin-area"><a class="checkin-signin" href="login.php">Sign in to check in &amp; earn points</a></div>';
+  }
+
+  // ---- toast ----
+  var toastEl = document.getElementById('toast');
+  var toastTimer = null;
+  function showToast(msg, kind) {
+    if (!toastEl) return;
+    toastEl.textContent = msg;
+    toastEl.className = 'toast ' + (kind === 'ok' ? 'toast-ok' : 'toast-err');
+    toastEl.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.hidden = true; }, 5000);
+  }
+
+  // ---- check-in (logged-in riders) ----
+  function handleCheckin(res, btn, orig) {
+    var d = res.d || {};
+    if (res.status === 401) { showToast('Please sign in to check in.', 'err'); btn.disabled = false; btn.textContent = orig; return; }
+    if (d.ok && d.status === 'checked_in') { showToast('Checked in! +1 point — you have ' + d.points + '.', 'ok'); btn.textContent = 'Checked in ✓'; return; }
+    if (d.ok && d.status === 'already_checked_in') { showToast("You're already checked in to this van.", 'ok'); btn.textContent = 'Checked in ✓'; return; }
+    if (d.error === 'too_far') { showToast('You need to be near the van to check in' + (d.distance_m ? ' (you are about ' + d.distance_m + ' m away).' : '.'), 'err'); btn.disabled = false; btn.textContent = orig; return; }
+    if (d.error === 'shift_unavailable') { showToast("This van isn't available to check into right now.", 'err'); btn.disabled = false; btn.textContent = orig; return; }
+    showToast('Check-in failed. Please try again.', 'err'); btn.disabled = false; btn.textContent = orig;
+  }
+
+  function doCheckin(btn) {
+    var shiftId = btn.getAttribute('data-shift');
+    if (btn.disabled || !shiftId) return;
+    if (!navigator.geolocation) { showToast('Location is not available on this device.', 'err'); return; }
+    var orig = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Checking in…';
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      var body = new URLSearchParams({
+        csrf: window.RIDER_CSRF || '', shift_id: shiftId,
+        lat: pos.coords.latitude, lng: pos.coords.longitude
+      });
+      fetch('checkin.php', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body, credentials: 'same-origin' })
+        .then(function (r) { return r.json().then(function (d) { return { status: r.status, d: d }; }); })
+        .then(function (res) { handleCheckin(res, btn, orig); })
+        .catch(function () { showToast('Check-in failed. Please try again.', 'err'); btn.disabled = false; btn.textContent = orig; });
+    }, function () {
+      showToast('Could not get your location (permission denied?).', 'err');
+      btn.disabled = false; btn.textContent = orig;
+    }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 10000 });
+  }
+
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest && e.target.closest('.checkin-btn');
+    if (btn) doCheckin(btn);
+  });
 
   function routeMatches(v) {
     return !elRoute.value || String(v.route_number) === elRoute.value;
@@ -93,7 +149,9 @@
       var m = markers[v.shift_id];
       if (m) {
         m.setLatLng([v.lat, v.lng]);
-        if (m.getPopup()) m.setPopupContent(html); else m.bindPopup(html);
+        // Don't overwrite a popup the rider has open (preserves check-in state).
+        if (m.getPopup()) { if (!m.isPopupOpen()) m.setPopupContent(html); }
+        else m.bindPopup(html);
       } else {
         m = L.marker([v.lat, v.lng]).bindPopup(html);
         markers[v.shift_id] = m;
