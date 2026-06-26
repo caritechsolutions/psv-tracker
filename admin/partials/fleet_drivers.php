@@ -12,10 +12,15 @@ $owners  = $pdo->query('SELECT id, name FROM owners ORDER BY name')->fetchAll();
 $drivers = $pdo->query(
     'SELECT d.id, d.name, d.username, d.status, o.name AS owner_name,
             (SELECT COUNT(*) FROM driver_tokens t WHERE t.driver_id = d.id) AS token_count,
-            (SELECT COUNT(*) FROM driver_vehicle_access a WHERE a.driver_id = d.id) AS grant_count
+            (SELECT COUNT(*) FROM driver_vehicle_access a WHERE a.driver_id = d.id) AS grant_count,
+            (SELECT AVG(driver_stars) FROM ratings g WHERE g.driver_id = d.id) AS drv_avg,
+            (SELECT COUNT(*)          FROM ratings g WHERE g.driver_id = d.id) AS drv_cnt
        FROM drivers d LEFT JOIN owners o ON o.id = d.owner_id
       ORDER BY d.name'
 )->fetchAll();
+$ratingText = static function ($avg, $cnt): string {
+    return (int) $cnt > 0 ? round((float) $avg, 1) . ' ★ (' . (int) $cnt . ')' : '—';
+};
 // Sign-on requires a vehicle grant, so a driver with none silently can't sign on.
 $noAccessCount = 0;
 foreach ($drivers as $d) {
@@ -110,15 +115,16 @@ if ($editing) {
   <div class="flash flash-warn"><?= $noAccessCount ?> driver<?= $noAccessCount === 1 ? '' : 's' ?> ha<?= $noAccessCount === 1 ? 's' : 've' ?> no vehicle access and cannot sign on until granted access (in the owner portal).</div>
 <?php endif; ?>
 <table class="ads-table">
-  <thead><tr><th>Name</th><th>Username</th><th>Owner</th><th>Status</th><th>Vehicle access</th><th>Tokens</th><th></th></tr></thead>
+  <thead><tr><th>Name</th><th>Username</th><th>Owner</th><th>Status</th><th>Driver rating</th><th>Vehicle access</th><th>Tokens</th><th></th></tr></thead>
   <tbody>
-    <?php if (!$drivers): ?><tr><td colspan="7" class="empty">No drivers yet.</td></tr><?php endif; ?>
+    <?php if (!$drivers): ?><tr><td colspan="8" class="empty">No drivers yet.</td></tr><?php endif; ?>
     <?php foreach ($drivers as $d): ?>
       <tr>
         <td><?= $h($d['name']) ?></td>
         <td><?= $h($d['username']) ?></td>
         <td><?= $d['owner_name'] ? $h($d['owner_name']) : '<span class="hint">&mdash;</span>' ?></td>
         <td><span class="badge <?= $d['status'] === 'active' ? 'badge-on' : 'badge-off' ?>"><?= $h($d['status']) ?></span></td>
+        <td><?= $h($ratingText($d['drv_avg'], $d['drv_cnt'])) ?></td>
         <td><?php if ((int) $d['grant_count'] === 0): ?><span class="badge badge-warn" title="No vehicle grants — cannot sign on">no access</span><?php else: ?><?= (int) $d['grant_count'] ?> vehicle<?= (int) $d['grant_count'] === 1 ? '' : 's' ?><?php endif; ?></td>
         <td><?= (int) $d['token_count'] ?></td>
         <td class="row-actions">

@@ -16,9 +16,10 @@ header('Access-Control-Allow-Origin: *'); // public read-only
 $pdo = db();
 $server_time = (string) $pdo->query('SELECT NOW()')->fetchColumn();
 
-// One row per open shift: its latest position, kept only if fresh. No join to
-// drivers — the public must not see who is driving. (Vehicle aggregate rating is
-// wired in at the ratings checkpoint; until then it is reported as no ratings.)
+// One row per open shift: its latest position, kept only if fresh. NO join to
+// drivers — the public must not see who is driving. The only rating aggregated
+// here is the VEHICLE score (avg/count of vehicle_stars); driver_stars are never
+// selected or exposed on the public feed.
 $sql =
     'SELECT
         s.id           AS shift_id,
@@ -27,7 +28,8 @@ $sql =
         r.route_number AS route_number,
         r.name         AS route_name,
         p.lat, p.lng, p.speed, p.heading, p.seat_status,
-        p.recorded_at, p.received_at
+        p.recorded_at, p.received_at,
+        vr.avg_v, vr.cnt_v
      FROM shifts s
      JOIN vehicles v ON v.id = s.vehicle_id
      JOIN routes   r ON r.id = s.route_id
@@ -37,6 +39,10 @@ $sql =
          ORDER BY p2.id DESC
          LIMIT 1
      )
+     LEFT JOIN (
+         SELECT vehicle_id, AVG(vehicle_stars) AS avg_v, COUNT(*) AS cnt_v
+         FROM ratings GROUP BY vehicle_id
+     ) vr ON vr.vehicle_id = v.id
      WHERE s.status = "open"
        AND p.received_at >= (NOW() - INTERVAL ' . (int) PUBLIC_POSITION_FRESHNESS_SECONDS . ' SECOND)
      ORDER BY v.registration';
@@ -57,7 +63,10 @@ $vehicles = array_map(static function (array $row): array {
         'seat_status'  => $row['seat_status'],
         'recorded_at'  => $row['recorded_at'],
         'received_at'  => $row['received_at'],
-        'rating'       => ['avg' => null, 'count' => 0],
+        'rating'       => [
+            'avg'   => $row['avg_v'] !== null ? round((float) $row['avg_v'], 1) : null,
+            'count' => (int) $row['cnt_v'],
+        ],
     ];
 }, $rows);
 

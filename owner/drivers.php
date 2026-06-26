@@ -116,13 +116,18 @@ if (isset($_GET['edit'])) {
 
 $drivers = $pdo->prepare(
     'SELECT d.id, d.name, d.username, d.status,
-            (SELECT COUNT(*) FROM driver_tokens t WHERE t.driver_id = d.id) AS token_count
+            (SELECT COUNT(*) FROM driver_tokens t WHERE t.driver_id = d.id) AS token_count,
+            (SELECT AVG(driver_stars) FROM ratings a WHERE a.driver_id = d.id) AS drv_avg,
+            (SELECT COUNT(*)          FROM ratings a WHERE a.driver_id = d.id) AS drv_cnt
        FROM drivers d WHERE d.owner_id = ? ORDER BY d.name'
 );
 $drivers->execute([$ownerId]);
 $drivers = $drivers->fetchAll();
 
 $h = static fn ($s): string => htmlspecialchars((string) $s, ENT_QUOTES);
+$ratingText = static function ($avg, $cnt): string {
+    return (int) $cnt > 0 ? round((float) $avg, 1) . ' ★ (' . (int) $cnt . ')' : '—';
+};
 
 owner_layout_start(['owner' => $owner, 'title' => 'Drivers', 'active' => 'drivers']);
 ?>
@@ -163,14 +168,15 @@ owner_layout_start(['owner' => $owner, 'title' => 'Drivers', 'active' => 'driver
   </form>
 
   <table class="o-table">
-    <thead><tr><th>Name</th><th>Username</th><th>Status</th><th>App sessions</th><th></th></tr></thead>
+    <thead><tr><th>Name</th><th>Username</th><th>Status</th><th>Driver rating</th><th>App sessions</th><th></th></tr></thead>
     <tbody>
-      <?php if (!$drivers): ?><tr><td colspan="5" class="empty">No drivers yet. Create one above.</td></tr><?php endif; ?>
+      <?php if (!$drivers): ?><tr><td colspan="6" class="empty">No drivers yet. Create one above.</td></tr><?php endif; ?>
       <?php foreach ($drivers as $d): ?>
         <tr>
           <td><?= $h($d['name']) ?></td>
           <td><?= $h($d['username']) ?></td>
           <td><span class="badge <?= $d['status'] === 'active' ? 'badge-on' : 'badge-off' ?>"><?= $h($d['status']) ?></span></td>
+          <td><?= $h($ratingText($d['drv_avg'], $d['drv_cnt'])) ?></td>
           <td><?= (int) $d['token_count'] ?></td>
           <td class="row-actions">
             <a class="btn-sm" href="access.php?driver=<?= (int) $d['id'] ?>">Access</a>

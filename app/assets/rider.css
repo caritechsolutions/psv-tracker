@@ -90,6 +90,17 @@ body {
 .ride-meta { color: #5b6573; font-size: .82rem; margin-top: .15rem; }
 .rate-stub { margin-top: .5rem; font-size: .8rem; color: #8a94a2; background: #f4f5f7; border: 1px solid #e3e6ea; border-radius: 5px; padding: .3rem .6rem; cursor: not-allowed; }
 
+.rate-slot { margin-top: .55rem; }
+.rated { font-size: .85rem; color: #1b5e20; }
+.rated .stars { color: #b15a00; letter-spacing: 1px; }
+.rate-form { display: grid; gap: .45rem; background: #f7f8fa; border: 1px solid #eef0f2; border-radius: 6px; padding: .55rem; }
+.rate-row { display: flex; gap: .6rem; }
+.rate-row label { flex: 1 1 0; display: grid; gap: .2rem; font-size: .8rem; color: #5b6573; }
+.rate-form select, .rate-form input { padding: .35rem; border: 1px solid #ccc; border-radius: 5px; font-size: .9rem; width: 100%; }
+.rate-submit { justify-self: start; border: 0; border-radius: 6px; background: #0d4ea0; color: #fff; padding: .4rem .9rem; font-size: .9rem; cursor: pointer; }
+.rate-submit:disabled { background: #8aa6cc; }
+.rate-msg { font-size: .78rem; color: #b71c1c; }
+
 /* auth + account content pages */
 .rider-content { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 1.25rem; display: flex; justify-content: center; align-items: flex-start; }
 .auth-card, .account-box {

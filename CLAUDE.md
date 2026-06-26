@@ -50,37 +50,36 @@ plus advertising.
 ## Roadmap
 
 Done:
-1. Capture API — driver sign-on / ping / sign-off, bearer-token auth.
+1. Capture API — driver sign-on / ping / sign-off. Auth is now per-issued token
+   (driver_tokens, via driver-login.php); sign-on enforces vehicle-access grants.
 2. Admin portal — login + live Barbados map of signed-on vehicles.
-
-Current:
-3. Admin shell — shared layout: left nav rail (Map, Ads, Fleet, Owners,
-   Reports, Settings) + one header/layout partial. Retrofit the map into it;
-   map controls become a collapsible overlay panel (live vehicle list,
-   route/seat filters, search) over a full-bleed map.
-
-Next:
-4. Ads configuration — first real section built inside the shell.
-5. Fleet management — vehicles (with a capacity field), drivers, routes. The
-   driver/conductor seat-status toggle is the source of truth for
-   seats-available.
-6. Owner portal — owners see only their own vehicles and telemetry (speed,
-   position).
-
-Rider side (separate workstream, after the admin portal):
-7. Rider app/web — live view + ETA for riders.
-8. Ride rewards — distance-travelled points for retention. Compute distance
-   from the rider's own trip pings, confirmed as a real PSV ride via
-   co-movement matching (rider speed/heading/stop-go tracks a tracked vehicle).
-   Server-side anti-fraud: mock-location/GPS-spoof detection, route/speed
-   plausibility, rate caps. Battery-friendly: track only during an active trip,
-   foreground-service notification, sensible cadence.
-9. GPS occupancy (later) — infer seats-available from co-moving rider devices;
-   only viable once app penetration is high (undercounts otherwise). Automatic
-   passenger counters (door sensors) are the accurate-count upgrade when the
-   per-vehicle hardware cost is justified.
+3. Admin shell — left nav rail + layout partial; map as a full-bleed map with a
+   collapsible overlay control panel.
+4. Ads configuration — image banner ads, global rotation, served via /api/ads.php.
+5. Fleet management — vehicles (capacity + owner), drivers, routes. Owners manage
+   their own drivers and grant them access to specific vehicles.
+6. Owner portal — owners see only their own vehicles + telemetry and manage their
+   own drivers/grants (separate owner session).
+7. Rider web app (v1) — served at /app/ (bare domain redirects there). Public
+   live map with route filter, seat status, the rider's GPS + nearest van, and
+   the ad rotation — the public feed carries NO driver identity. Rider accounts
+   (separate session, rate-limited login). Proximity-gated check-in awards one
+   trip point per verified ride. Ride ratings: a PUBLIC vehicle aggregate (on the
+   map) + a PRIVATE driver aggregate (owner + admin only, never public).
+   Security pass also landed: public test token revoked, login rate-limiting,
+   per-login-IP throttling behind the proxy.
 
 Later:
+8. Ride rewards v2 — distance-travelled points, confirmed via co-movement
+   matching (rider speed/heading/stop-go tracks a tracked vehicle). Server-side
+   anti-fraud: mock-location/GPS-spoof detection, route/speed plausibility, rate
+   caps. Battery-friendly: track only during an active trip, foreground-service
+   notification, sensible cadence. (v1 ships trip-based points + a soft GPS
+   proximity gate; this hardens it.)
+9. GPS occupancy — infer seats-available from co-moving rider devices; only
+   viable once app penetration is high (undercounts otherwise). Automatic
+   passenger counters (door sensors) are the accurate-count upgrade when the
+   per-vehicle hardware cost is justified.
 10. In-cabin audio — consent-backed (signage), ideally event-triggered; handle
     Barbados Data Protection Act obligations deliberately.
 
