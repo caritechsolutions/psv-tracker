@@ -78,13 +78,15 @@
 
   function popupHtml(v, serverTime) {
     var speed = (v.speed === null || v.speed === undefined) ? '—' : Math.round(v.speed) + ' km/h';
-    return [
+    var lines = [
       '<div class="popup-reg">' + esc(v.registration) + '</div>',
       'Route ' + esc(v.route_number) + ' — ' + esc(v.route_name),
       seatLabel(v.seat_status),
       'Speed: ' + speed,
       'Last seen ' + esc(lastSeen(serverTime, v.received_at))
-    ].join('<br>');
+    ];
+    if (v.driver_name) lines.splice(1, 0, 'Driver: ' + esc(v.driver_name));
+    return lines.join('<br>');
   }
 
   // Create/update/remove marker objects to mirror the payload. Does NOT decide

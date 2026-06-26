@@ -100,3 +100,21 @@ function normalize_ts($value): string
     $ts = strtotime((string) $value);
     return $ts ? date('Y-m-d H:i:s', $ts) : date('Y-m-d H:i:s');
 }
+
+/** Read a global setting (string), or $default if it isn't set. */
+function setting_get(string $key, ?string $default = null): ?string
+{
+    $stmt = db()->prepare('SELECT setting_value FROM settings WHERE setting_key = ? LIMIT 1');
+    $stmt->execute([$key]);
+    $value = $stmt->fetchColumn();
+    return $value === false ? $default : (string) $value;
+}
+
+/** Create or update a global setting. */
+function setting_set(string $key, string $value): void
+{
+    db()->prepare(
+        'INSERT INTO settings (setting_key, setting_value) VALUES (?, ?)
+         ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)'
+    )->execute([$key, $value]);
+}
