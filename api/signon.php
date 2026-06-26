@@ -32,6 +32,15 @@ if (!$chk->fetchColumn()) {
     json_response(422, ['ok' => false, 'error' => 'unknown_route']);
 }
 
+// The driver must have been granted access to this vehicle. Checked before the
+// auto-close below so a rejected sign-on has no side effects on the driver's
+// current open shift.
+$chk = $pdo->prepare('SELECT 1 FROM driver_vehicle_access WHERE driver_id = ? AND vehicle_id = ? LIMIT 1');
+$chk->execute([$driver['id'], $vehicle_id]);
+if (!$chk->fetchColumn()) {
+    json_response(403, ['ok' => false, 'error' => 'vehicle_not_permitted']);
+}
+
 // Close any shift this driver left open (e.g. app crashed / forgot to sign off).
 $pdo->prepare('UPDATE shifts SET status = "closed", ended_at = NOW() WHERE driver_id = ? AND status = "open"')
     ->execute([$driver['id']]);
