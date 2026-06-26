@@ -10,10 +10,15 @@ if (isset($_GET['edit'])) {
 }
 $owners   = $pdo->query('SELECT id, name FROM owners ORDER BY name')->fetchAll();
 $vehicles = $pdo->query(
-    'SELECT v.*, o.name AS owner_name
+    'SELECT v.*, o.name AS owner_name,
+            (SELECT AVG(vehicle_stars) FROM ratings a WHERE a.vehicle_id = v.id) AS veh_avg,
+            (SELECT COUNT(*)           FROM ratings a WHERE a.vehicle_id = v.id) AS veh_cnt
        FROM vehicles v LEFT JOIN owners o ON o.id = v.owner_id
       ORDER BY v.registration'
 )->fetchAll();
+$ratingText = static function ($avg, $cnt): string {
+    return (int) $cnt > 0 ? round((float) $avg, 1) . ' ★ (' . (int) $cnt . ')' : '—';
+};
 ?>
 <form class="ads-form" method="post" action="fleet.php?tab=vehicles">
   <?= csrf_field() ?>
@@ -54,15 +59,16 @@ $vehicles = $pdo->query(
 </form>
 
 <table class="ads-table">
-  <thead><tr><th>Registration</th><th>Label</th><th>Capacity</th><th>Owner</th><th>Status</th><th></th></tr></thead>
+  <thead><tr><th>Registration</th><th>Label</th><th>Capacity</th><th>Owner</th><th>Rating</th><th>Status</th><th></th></tr></thead>
   <tbody>
-    <?php if (!$vehicles): ?><tr><td colspan="6" class="empty">No vehicles yet.</td></tr><?php endif; ?>
+    <?php if (!$vehicles): ?><tr><td colspan="7" class="empty">No vehicles yet.</td></tr><?php endif; ?>
     <?php foreach ($vehicles as $v): ?>
       <tr>
         <td><?= $h($v['registration']) ?></td>
         <td><?= $h($v['label']) ?: '&mdash;' ?></td>
         <td><?= $v['capacity'] !== null ? (int) $v['capacity'] : '&mdash;' ?></td>
         <td><?= $v['owner_name'] ? $h($v['owner_name']) : '&mdash;' ?></td>
+        <td><?= $h($ratingText($v['veh_avg'], $v['veh_cnt'])) ?></td>
         <td><span class="badge <?= $v['status'] === 'active' ? 'badge-on' : 'badge-off' ?>"><?= $h($v['status']) ?></span></td>
         <td class="row-actions">
           <a class="btn-sm" href="fleet.php?tab=vehicles&edit=<?= (int) $v['id'] ?>">Edit</a>
