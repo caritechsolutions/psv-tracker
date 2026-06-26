@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require __DIR__ . '/../api/db.php';
+require __DIR__ . '/../api/rate_limit.php';
 require __DIR__ . '/auth.php';
 
 admin_session_start();
@@ -13,10 +14,14 @@ if (current_admin() !== null) {
 
 $error = '';
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+    $ip = client_ip();
     $username = trim($_POST['username'] ?? '');
     $password = (string) ($_POST['password'] ?? '');
 
-    if ($username === '' || $password === '') {
+    if (rate_limit_blocked('admin_login', $ip)) {
+        http_response_code(429);
+        $error = 'Too many failed attempts. Please wait a few minutes and try again.';
+    } elseif ($username === '' || $password === '') {
         $error = 'Enter your username and password.';
     } else {
         $stmt = db()->prepare(
@@ -30,6 +35,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         // password is wrong — avoids leaking which usernames exist.
         if ($admin && $admin['status'] === 'active'
             && password_verify($password, $admin['password_hash'])) {
+            rate_limit_clear('admin_login', $ip);
             session_regenerate_id(true);
             $_SESSION['admin_id']       = (int) $admin['id'];
             $_SESSION['admin_username'] = $admin['username'];
@@ -39,6 +45,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             header('Location: index.php');
             exit;
         }
+        rate_limit_fail('admin_login', $ip);
         $error = 'Invalid username or password.';
     }
 }

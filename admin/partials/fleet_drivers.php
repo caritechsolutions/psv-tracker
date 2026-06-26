@@ -11,10 +11,18 @@ if (isset($_GET['edit'])) {
 $owners  = $pdo->query('SELECT id, name FROM owners ORDER BY name')->fetchAll();
 $drivers = $pdo->query(
     'SELECT d.id, d.name, d.username, d.status, o.name AS owner_name,
-            (SELECT COUNT(*) FROM driver_tokens t WHERE t.driver_id = d.id) AS token_count
+            (SELECT COUNT(*) FROM driver_tokens t WHERE t.driver_id = d.id) AS token_count,
+            (SELECT COUNT(*) FROM driver_vehicle_access a WHERE a.driver_id = d.id) AS grant_count
        FROM drivers d LEFT JOIN owners o ON o.id = d.owner_id
       ORDER BY d.name'
 )->fetchAll();
+// Sign-on requires a vehicle grant, so a driver with none silently can't sign on.
+$noAccessCount = 0;
+foreach ($drivers as $d) {
+    if ((int) $d['grant_count'] === 0) {
+        $noAccessCount++;
+    }
+}
 
 $tokens = [];
 if ($editing) {
@@ -98,16 +106,20 @@ if ($editing) {
   </div>
 <?php endif; ?>
 
+<?php if ($noAccessCount > 0): ?>
+  <div class="flash flash-warn"><?= $noAccessCount ?> driver<?= $noAccessCount === 1 ? '' : 's' ?> ha<?= $noAccessCount === 1 ? 's' : 've' ?> no vehicle access and cannot sign on until granted access (in the owner portal).</div>
+<?php endif; ?>
 <table class="ads-table">
-  <thead><tr><th>Name</th><th>Username</th><th>Owner</th><th>Status</th><th>Tokens</th><th></th></tr></thead>
+  <thead><tr><th>Name</th><th>Username</th><th>Owner</th><th>Status</th><th>Vehicle access</th><th>Tokens</th><th></th></tr></thead>
   <tbody>
-    <?php if (!$drivers): ?><tr><td colspan="6" class="empty">No drivers yet.</td></tr><?php endif; ?>
+    <?php if (!$drivers): ?><tr><td colspan="7" class="empty">No drivers yet.</td></tr><?php endif; ?>
     <?php foreach ($drivers as $d): ?>
       <tr>
         <td><?= $h($d['name']) ?></td>
         <td><?= $h($d['username']) ?></td>
         <td><?= $d['owner_name'] ? $h($d['owner_name']) : '<span class="hint">&mdash;</span>' ?></td>
         <td><span class="badge <?= $d['status'] === 'active' ? 'badge-on' : 'badge-off' ?>"><?= $h($d['status']) ?></span></td>
+        <td><?php if ((int) $d['grant_count'] === 0): ?><span class="badge badge-warn" title="No vehicle grants — cannot sign on">no access</span><?php else: ?><?= (int) $d['grant_count'] ?> vehicle<?= (int) $d['grant_count'] === 1 ? '' : 's' ?><?php endif; ?></td>
         <td><?= (int) $d['token_count'] ?></td>
         <td class="row-actions">
           <a class="btn-sm" href="fleet.php?tab=drivers&edit=<?= (int) $d['id'] ?>">Edit</a>
