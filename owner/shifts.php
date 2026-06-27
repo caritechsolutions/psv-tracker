@@ -5,41 +5,41 @@ require __DIR__ . '/auth.php';
 require __DIR__ . '/../api/shiftlog.php';
 require __DIR__ . '/partials/layout.php';
 
-$admin = require_admin_page();
-$pdo   = db();
+$owner   = require_owner_page();
+$ownerId = (int) $owner['id'];   // <-- session owner ONLY
+$pdo     = db();
 
-const ADMIN_SHIFTS_PER_PAGE = 50;
+const OWNER_SHIFTS_PER_PAGE = 50;
 $page   = max(1, (int) ($_GET['page'] ?? 1));
-$offset = ($page - 1) * ADMIN_SHIFTS_PER_PAGE;
+$offset = ($page - 1) * OWNER_SHIFTS_PER_PAGE;
 
-$total  = shiftlog_count($pdo, null);                 // all shifts (every owner)
-$shifts = shiftlog_fetch($pdo, null, ADMIN_SHIFTS_PER_PAGE, $offset);
+$total  = shiftlog_count($pdo, $ownerId);
+$shifts = shiftlog_fetch($pdo, $ownerId, OWNER_SHIFTS_PER_PAGE, $offset);
 $events = shiftlog_events($pdo, array_map(static fn ($r) => (int) $r['id'], $shifts));
-$pages  = (int) max(1, ceil($total / ADMIN_SHIFTS_PER_PAGE));
+$pages  = (int) max(1, ceil($total / OWNER_SHIFTS_PER_PAGE));
 
 $h = static fn ($s): string => htmlspecialchars((string) $s, ENT_QUOTES);
 
-admin_layout_start(['admin' => $admin, 'active' => 'reports', 'title' => 'Reports']);
+owner_layout_start(['owner' => $owner, 'title' => 'Shifts', 'active' => 'shifts']);
 ?>
-<div class="ads-page">
+<div class="owner-content">
   <h2>Shift log</h2>
-  <p class="hint">All sign-ons, most recent first. Expand a speeding flag to see the events.</p>
+  <p class="muted">Sign-ons for your vehicles, most recent first. Expand a speeding flag to see the events.</p>
 
-  <table class="ads-table">
-    <thead><tr><th>Driver</th><th>Owner</th><th>Vehicle</th><th>Route</th><th>Start</th><th>End</th><th>Duration</th><th>Speeding</th></tr></thead>
+  <table class="o-table">
+    <thead><tr><th>Driver</th><th>Vehicle</th><th>Route</th><th>Start</th><th>End</th><th>Duration</th><th>Speeding</th></tr></thead>
     <tbody>
-      <?php if (!$shifts): ?><tr><td colspan="8" class="empty">No shifts yet.</td></tr><?php endif; ?>
+      <?php if (!$shifts): ?><tr><td colspan="7" class="empty">No shifts yet.</td></tr><?php endif; ?>
       <?php foreach ($shifts as $s): $evs = $events[(int) $s['id']] ?? []; ?>
         <tr>
           <td><?= $h($s['driver_name']) ?></td>
-          <td><?= $s['owner_name'] ? $h($s['owner_name']) : '<span class="hint">&mdash;</span>' ?></td>
           <td><?= $h($s['registration']) ?></td>
           <td><?= $h($s['route_number']) ?> — <?= $h($s['route_name']) ?></td>
           <td><?= $h($s['started_at']) ?></td>
-          <td><?= $s['ended_at'] ? $h($s['ended_at']) : '<span class="hint">—</span>' ?></td>
+          <td><?= $s['ended_at'] ? $h($s['ended_at']) : '<span class="muted">—</span>' ?></td>
           <td><?= $h(shiftlog_duration($s['dur_seconds'])) ?></td>
           <td>
-            <?php if (!$evs): ?><span class="hint">—</span>
+            <?php if (!$evs): ?><span class="muted">—</span>
             <?php else: ?>
               <details class="speed-details">
                 <summary><span class="badge badge-warn">&#9888; <?= count($evs) ?></span></summary>
@@ -59,11 +59,11 @@ admin_layout_start(['admin' => $admin, 'active' => 'reports', 'title' => 'Report
 
   <?php if ($pages > 1): ?>
     <div class="pager">
-      <?php if ($page > 1): ?><a class="btn-sm" href="reports.php?page=<?= $page - 1 ?>">&larr; Newer</a><?php endif; ?>
-      <span class="hint">Page <?= $page ?> of <?= $pages ?></span>
-      <?php if ($page < $pages): ?><a class="btn-sm" href="reports.php?page=<?= $page + 1 ?>">Older &rarr;</a><?php endif; ?>
+      <?php if ($page > 1): ?><a href="shifts.php?page=<?= $page - 1 ?>">&larr; Newer</a><?php endif; ?>
+      <span class="muted">Page <?= $page ?> of <?= $pages ?></span>
+      <?php if ($page < $pages): ?><a href="shifts.php?page=<?= $page + 1 ?>">Older &rarr;</a><?php endif; ?>
     </div>
   <?php endif; ?>
 </div>
 <?php
-admin_layout_end();
+owner_layout_end();

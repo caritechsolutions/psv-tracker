@@ -18,7 +18,7 @@ function owner_layout_start(array $opts): void
     $active = (string) ($opts['active'] ?? '');
     $who    = ($owner['name'] ?? '') !== '' ? $owner['name'] : ($owner['username'] ?? '');
     $h      = static fn (string $s): string => htmlspecialchars($s, ENT_QUOTES);
-    $nav    = ['map' => ['Map', 'index.php'], 'drivers' => ['Drivers', 'drivers.php']];
+    $nav    = ['map' => ['Map', 'index.php'], 'drivers' => ['Drivers', 'drivers.php'], 'shifts' => ['Shifts', 'shifts.php']];
     ?>
 <!doctype html>
 <html lang="en">
