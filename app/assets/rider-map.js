@@ -67,18 +67,58 @@
     return m < 1000 ? Math.round(m) + ' m' : (m / 1000).toFixed(1) + ' km';
   }
 
+  function speedText(s) { return (s == null) ? '—' : Math.round(s) + ' km/h'; }
+
   // NOTE: popup intentionally omits any driver field — the public feed has none.
+  // Dynamic fields are wrapped in hooks (.pp-seat/.pp-rating/.pp-speed/
+  // .pp-lastseen) so the poll can refresh them in place without rebuilding the
+  // popup (which would wipe an in-progress check-in). Static parts (registration,
+  // route) and the check-in area are left alone on refresh.
   function popupHtml(v, serverTime) {
-    var speed = (v.speed == null) ? '—' : Math.round(v.speed) + ' km/h';
-    var lines = [
-      '<div class="popup-reg">' + esc(v.registration) + (v.label ? ' · ' + esc(v.label) : '') + '</div>',
-      'Route ' + esc(v.route_number) + ' — ' + esc(v.route_name),
-      seatLabel(v.seat_status),
-      'Rating: ' + ratingLabel(v.rating),
-      'Speed: ' + speed,
-      'Last seen ' + esc(lastSeen(serverTime, v.received_at))
-    ];
-    return lines.join('<br>') + checkinBlock(v);
+    return '<div class="popup-reg">' + esc(v.registration) + (v.label ? ' · ' + esc(v.label) : '') + '</div>' +
+      'Route ' + esc(v.route_number) + ' — ' + esc(v.route_name) + '<br>' +
+      '<span class="pp-seat">' + seatLabel(v.seat_status) + '</span><br>' +
+      'Rating: <span class="pp-rating">' + ratingLabel(v.rating) + '</span><br>' +
+      'Speed: <span class="pp-speed">' + esc(speedText(v.speed)) + '</span><br>' +
+      '<span class="pp-status">Last seen <span class="pp-lastseen">' + esc(lastSeen(serverTime, v.received_at)) + '</span></span>' +
+      checkinBlock(v);
+  }
+
+  function setHtml(el, sel, html) { var n = el.querySelector(sel); if (n) n.innerHTML = html; }
+  function setText(el, sel, txt) { var n = el.querySelector(sel); if (n) n.textContent = txt; }
+
+  // Refresh only the live fields of an OPEN popup, in place. Does not touch the
+  // check-in area or rebuild the popup, so an in-progress check-in is preserved.
+  function updateOpenPopup(m, v, serverTime) {
+    var el = m.getPopup() && m.getPopup().getElement();
+    if (!el) return;
+    m._gone = false;
+    setHtml(el, '.pp-seat', seatLabel(v.seat_status));
+    setHtml(el, '.pp-rating', ratingLabel(v.rating));
+    setText(el, '.pp-speed', speedText(v.speed));
+    var status = el.querySelector('.pp-status');
+    if (status) {
+      var ls = status.querySelector('.pp-lastseen');
+      if (ls) ls.textContent = lastSeen(serverTime, v.received_at);
+      else status.innerHTML = 'Last seen <span class="pp-lastseen">' + esc(lastSeen(serverTime, v.received_at)) + '</span>';
+    }
+    // If it had gone stale and came back, re-enable a check-in button we disabled
+    // (but never a button the rider already used — that one stays as is).
+    var btn = el.querySelector('.checkin-btn[data-stale]');
+    if (btn) { btn.disabled = false; btn.removeAttribute('data-stale'); btn.textContent = 'Check in'; }
+  }
+
+  // The vehicle dropped out of the feed while its popup is open: show "no longer
+  // reporting" instead of a frozen stale value, and keep the marker until the
+  // rider closes the popup (then popupclose removes it).
+  function markStale(m) {
+    m._gone = true;
+    var el = m.getPopup() && m.getPopup().getElement();
+    if (!el) return;
+    var status = el.querySelector('.pp-status');
+    if (status) status.innerHTML = '<span class="pp-gone">No longer reporting</span>';
+    var btn = el.querySelector('.checkin-btn');
+    if (btn && !btn.disabled) { btn.disabled = true; btn.setAttribute('data-stale', '1'); btn.textContent = 'Unavailable'; }
   }
 
   function checkinBlock(v) {
@@ -145,25 +185,46 @@
     var seen = {};
     data.vehicles.forEach(function (v) {
       seen[v.shift_id] = true;
-      var html = popupHtml(v, data.server_time);
       var m = markers[v.shift_id];
       if (m) {
-        m.setLatLng([v.lat, v.lng]);
-        // Don't overwrite a popup the rider has open (preserves check-in state).
-        if (m.getPopup()) { if (!m.isPopupOpen()) m.setPopupContent(html); }
-        else m.bindPopup(html);
+        m.setLatLng([v.lat, v.lng]);   // marker still moves
+        if (m.getPopup()) {
+          // Open popup: refresh live fields in place (keeps check-in state).
+          // Closed popup: rebuild so the next open is fresh.
+          if (m.isPopupOpen()) updateOpenPopup(m, v, data.server_time);
+          else m.setPopupContent(popupHtml(v, data.server_time));
+        } else {
+          m.bindPopup(popupHtml(v, data.server_time));
+        }
       } else {
-        m = L.marker([v.lat, v.lng]).bindPopup(html);
+        m = L.marker([v.lat, v.lng]).bindPopup(popupHtml(v, data.server_time));
+        m._shift = v.shift_id;
         markers[v.shift_id] = m;
       }
       if (routeMatches(v)) { if (!map.hasLayer(m)) m.addTo(map); }
       else if (map.hasLayer(m)) map.removeLayer(m);
     });
     Object.keys(markers).forEach(function (id) {
-      if (!seen[id]) { if (map.hasLayer(markers[id])) map.removeLayer(markers[id]); delete markers[id]; }
+      if (seen[id]) return;
+      var m = markers[id];
+      if (m.getPopup() && m.isPopupOpen()) {
+        markStale(m);   // keep it open, but flag it; removed on popupclose
+      } else {
+        if (map.hasLayer(m)) map.removeLayer(m);
+        delete markers[id];
+      }
     });
     updateNearest();
   }
+
+  // Remove a vehicle that went stale once the rider closes its popup.
+  map.on('popupclose', function (e) {
+    var m = e.popup && e.popup._source;
+    if (m && m._gone) {
+      if (map.hasLayer(m)) map.removeLayer(m);
+      if (m._shift != null) delete markers[m._shift];
+    }
+  });
 
   function updateNearest() {
     if (!riderLoc) {
