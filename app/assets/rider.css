@@ -56,6 +56,7 @@ body {
 /* popup */
 .popup-reg { font-weight: 700; }
 .popup-rating { color: #b15a00; }
+.pp-gone { color: #b71c1c; font-weight: 600; }
 .seat-available { color: #1b5e20; }
 .seat-full { color: #b71c1c; }
 .seat-unknown { color: #555; }
